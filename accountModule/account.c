@@ -153,83 +153,141 @@
 #include <stdlib.h>
 #include <string.h>
 
+// File path where all account records are stored in binary format
 #define ACCOUNTS_FILE "accountModule/accounts.dat"
 
-// ensure folder existence outside of code or create folders manually
-
+// ---------------------------------------------------------------------------
+// next_account_number()
+// Reads all accounts from the file and returns the next available account number.
+// If file doesn't exist, it starts numbering from 1001.
+// ---------------------------------------------------------------------------
 int next_account_number() {
-    FILE *f = fopen(ACCOUNTS_FILE, "rb");
-    if (!f) return 1001; // first account number
+    FILE *f = fopen(ACCOUNTS_FILE, "rb");   // Open file for reading in binary
+    if (!f) return 1001;                    // If no file, first account starts at 1001
+
     Account a;
-    int last = 1000;
+    int last = 1000;                        // Start tracking account numbers
+
+    // Read each account and track the highest account number
     while (fread(&a, sizeof(Account), 1, f) == 1) {
-        if (a.accountNumber > last) last = a.accountNumber;
+        if (a.accountNumber > last)
+            last = a.accountNumber;
     }
+
     fclose(f);
-    return last + 1;
+    return last + 1;                        // Next account number
 }
 
+// ---------------------------------------------------------------------------
+// create_account()
+// Creates a new account with provided name and pin, initializes balance to 0,
+// generates a new account number, and stores the account in binary file.
+// Returns the account number on success or -1 on failure.
+// ---------------------------------------------------------------------------
 int create_account(const char *name, const char *pin) {
     Account a;
-    a.accountNumber = next_account_number();
-    strncpy(a.name, name, sizeof(a.name)-1);
-    a.name[sizeof(a.name)-1] = '\0';
-    strncpy(a.pin, pin, sizeof(a.pin)-1);
-    a.pin[sizeof(a.pin)-1] = '\0';
-    a.balance = 0.0;
+    a.accountNumber = next_account_number();   // Generate next account number
 
+    // Copy name safely (avoid buffer overflow)
+    strncpy(a.name, name, sizeof(a.name) - 1);
+    a.name[sizeof(a.name) - 1] = '\0';
+
+    // Copy PIN safely
+    strncpy(a.pin, pin, sizeof(a.pin) - 1);
+    a.pin[sizeof(a.pin) - 1] = '\0';
+
+    a.balance = 0.0;                            // Default balance
+
+    // Open accounts file in append-binary mode
     FILE *f = fopen(ACCOUNTS_FILE, "ab");
-    if (!f) return -1;
-    fwrite(&a, sizeof(Account), 1, f);
+    if (!f) return -1;                          // Failed to open file
+
+    fwrite(&a, sizeof(Account), 1, f);          // Write the new account
     fclose(f);
-    return a.accountNumber;
+
+    return a.accountNumber;                     // Return generated number
 }
 
+// ---------------------------------------------------------------------------
+// authenticate()
+// Validates if the provided accountNumber + PIN combination exists in file.
+// Returns 1 if valid, 0 otherwise.
+// ---------------------------------------------------------------------------
 int authenticate(int accountNumber, const char *pin) {
     Account a;
-    FILE *f = fopen(ACCOUNTS_FILE, "rb");
-    if (!f) return 0;
+    FILE *f = fopen(ACCOUNTS_FILE, "rb");       // Open for read
+    if (!f) return 0;                           // File doesn't exist → auth fails
+
+    // Search for the account
     while (fread(&a, sizeof(Account), 1, f) == 1) {
-        if (a.accountNumber == accountNumber) {
+        if (a.accountNumber == accountNumber) { // Account found
             fclose(f);
-            return (strcmp(a.pin, pin) == 0);
+            return (strcmp(a.pin, pin) == 0);   // Compare PINs → return result
         }
     }
+
     fclose(f);
-    return 0;
+    return 0;                                   // Account not found or mismatch
 }
 
+// ---------------------------------------------------------------------------
+// get_account()
+// Retrieves account details by accountNumber and stores in 'out' struct.
+// Returns 1 if found, 0 otherwise.
+// ---------------------------------------------------------------------------
 int get_account(int accountNumber, Account *out) {
     Account a;
     FILE *f = fopen(ACCOUNTS_FILE, "rb");
     if (!f) return 0;
+
+    // Scan file for matching account number
     while (fread(&a, sizeof(Account), 1, f) == 1) {
         if (a.accountNumber == accountNumber) {
-            if (out) *out = a;
+            if (out) *out = a;   // Copy data to output struct
             fclose(f);
             return 1;
         }
     }
+
     fclose(f);
     return 0;
 }
 
+// ---------------------------------------------------------------------------
+// update_account()
+// Overwrites an existing account record by matching accountNumber.
+// Opens file in read+write mode, locates target, and replaces it.
+// Returns 1 if successful, 0 otherwise.
+// ---------------------------------------------------------------------------
 int update_account(const Account *acc) {
-    FILE *f = fopen(ACCOUNTS_FILE, "rb+");
+    FILE *f = fopen(ACCOUNTS_FILE, "rb+");   // Read+Write file
     if (!f) return 0;
+
     Account a;
+
+    // Read file record-by-record
     while (fread(&a, sizeof(Account), 1, f) == 1) {
-        if (a.accountNumber == acc->accountNumber) {
+        if (a.accountNumber == acc->accountNumber) {  // Match found
+            // Move cursor back one record to overwrite current item
             fseek(f, -((long)sizeof(Account)), SEEK_CUR);
+
+            // Write updated account
             fwrite(acc, sizeof(Account), 1, f);
+
             fclose(f);
-            return 1;
+            return 1;                               // Update successful
         }
     }
+
     fclose(f);
-    return 0;
+    return 0;                                       // Account not found
 }
 
+// ---------------------------------------------------------------------------
+// debug_print_accounts()
+// Prints all accounts for debugging/testing purposes.
+// Lists account number, name, PIN, and balance.
+// ---------------------------------------------------------------------------
 void debug_print_accounts() {
     FILE *f = fopen("accountModule/accounts.dat", "rb");
     if (!f) {
@@ -239,9 +297,12 @@ void debug_print_accounts() {
 
     Account a;
     printf("\n--- DEBUG ACCOUNTS ---\n");
+
+    // Read all accounts and print them
     while (fread(&a, sizeof(Account), 1, f) == 1) {
         printf("Acc: %d | Name: %s | PIN: '%s' | Balance: %.2f\n",
                 a.accountNumber, a.name, a.pin, a.balance);
     }
+
     fclose(f);
 }
