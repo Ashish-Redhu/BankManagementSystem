@@ -1,5 +1,5 @@
 #include "transaction.h"
-#include "accountModule/account.h"
+#include "../accountModule/account.h"
 #include <time.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,7 +21,7 @@ void log_transaction(int accountNumber,const char* type,double amount){
     //format the time into readable string : 2025-03-08 14:55:22
     strftime(timestr,sizeof(timestr),"%Y-%m-%d %H:%M:%S",tm);
     //appends log text into that file (ex) -> [2025-03-08 14:55:22] DEPOSIT: 200.00
-    fprintf(f,"[%s] %s: %.2f",timestr,type,amount);
+    fprintf(f,"[%s] %s: %.2f\n",timestr,type,amount);
     //flushes data and releases the file handle
     fclose(f);
 }
