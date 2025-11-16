@@ -157,6 +157,33 @@
 #include <string.h>
 #define FILE_NAME "../accountModule/accounts.dat"
 
+static int file_exists(const char * fname){
+    FILE *f=fopen(fname,"rb");
+    if(!f)return 0;
+    fclose(f);
+    return 1;
+}
+
+int next_account_number(){
+    FILE *f= fopen(FILE_NAME,"rb");
+    if(!f) return 1001; //start
+    Account a;
+    int last =1000;
+
+    while(fread(&a,sizeof(Account),1,f)==1){
+        if(a.accountNumber>last)last=a.accountNumber;
+    }
+    fclose(f);
+    return last+1;
+}
+
+int create_account(const char*name,const char*pin){
+    Account a;
+    a.accountNumber=next_account_number();
+    strncpy(a.name,name,sizeof(a.name)-1);
+    a.name[sizeof(a.name)-1]='␀'
+}
+
 int get_account(int accountNumber,Account * out){
     Account a;
     FILE *f=fopen(FILE_NAME,"rb");
