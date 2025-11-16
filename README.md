@@ -28,6 +28,24 @@ BankManagementSystem/
 ```
 
 
+🧪 Optional: Compile Without Make
+
+```
+gcc main.c \
+    accountModule/account.c \
+    transactionModule/transaction.c \
+    loanModule/loan.c \
+    reportsModule/reports.c \
+    -o BankManagementSystem
+
+```
+run the program manually 
+
+```
+./BankManagementSystem
+
+```
+
 ## Contributors
 - @Ashish-Redhu 
 - @mayank5515
